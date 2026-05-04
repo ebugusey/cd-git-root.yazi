@@ -1,14 +1,22 @@
 --- @since 25.5.31
 
-local function get_git_toplevel()
-	local command = "git rev-parse --show-toplevel 2>&1"
-	local handle = io.popen(command)
-	local result = handle:read("*a")
-	local status_table = { handle:close() }
-	local status_code = status_table[3]
+local get_cwd = ya.sync(function()
+	return tostring(cx.active.current.cwd)
+end)
 
-	if status_code == 0 then
-		local destination = result:gsub("[\n\r]", "") .. "/"
+local function get_git_toplevel()
+	local command =
+		Command("git")
+			:arg("rev-parse")
+			:arg("--show-toplevel")
+			:cwd(get_cwd())
+	local output = command:output()
+	if not output then
+		return nil
+	end
+
+	if output.status.code == 0 then
+		local destination = output.stdout:gsub("[\n\r]", "") .. "/"
 		return destination
 	else
 		return nil
